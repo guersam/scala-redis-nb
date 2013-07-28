@@ -5,10 +5,10 @@ import RedisCommand._
 
 
 object StringCommands {
-  case class Get[A](key: Any)(implicit format: Format, parse: Parse[A]) extends StringCommand {
-    type Ret = Option[A]
+  case class Get(key: Any)(implicit format: Format) extends StringCommand {
+    type Ret = Option[String]
     val line = multiBulk("GET" +: Seq(format.apply(key)))
-    val ret  = (_: RedisReply[_]).asBulk[A]
+    val ret  = (_: RedisReply[_]).asBulk
   }
   
   sealed trait SetExpiryOption
@@ -38,10 +38,10 @@ object StringCommands {
     val ret  = (_: RedisReply[_]).asBoolean
   }
 
-  case class GetSet[A](key: Any, value: Any)(implicit format: Format, parse: Parse[A]) extends StringCommand {
-    type Ret = Option[A]
+  case class GetSet(key: Any, value: Any)(implicit format: Format) extends StringCommand {
+    type Ret = Option[String]
     val line = multiBulk("GETSET" +: (Seq(key, value) map format.apply))
-    val ret  = (_: RedisReply[_]).asBulk[A]
+    val ret  = (_: RedisReply[_]).asBulk
   }
   
   case class SetNx(key: Any, value: Any)(implicit format: Format) extends StringCommand {
@@ -80,10 +80,10 @@ object StringCommands {
     val ret  = (_: RedisReply[_]).asLong
   }
 
-  case class MGet[A](key: Any, keys: Any*)(implicit format: Format, parse: Parse[A]) extends StringCommand {
-    type Ret = List[Option[A]]
+  case class MGet(key: Any, keys: Any*)(implicit format: Format) extends StringCommand {
+    type Ret = List[Option[String]]
     val line = multiBulk("MGET" +: ((key :: keys.toList) map format.apply))
-    val ret  = (_: RedisReply[_]).asList[A]
+    val ret  = (_: RedisReply[_]).asList
   }
 
   case class MSet(kvs: (Any, Any)*)(implicit format: Format) extends StringCommand {
@@ -104,10 +104,10 @@ object StringCommands {
     val ret  = (_: RedisReply[_]).asLong
   }
 
-  case class GetRange[A](key: Any, start: Int, end: Int)(implicit format: Format, parse: Parse[A]) extends StringCommand {
-    type Ret = Option[A]
+  case class GetRange(key: Any, start: Int, end: Int)(implicit format: Format) extends StringCommand {
+    type Ret = Option[String]
     val line = multiBulk("GETRANGE" +: (Seq(key, start, end) map format.apply))
-    val ret  = (_: RedisReply[_]).asBulk[A]
+    val ret  = (_: RedisReply[_]).asBulk
   }
   
   case class Strlen(key: Any)(implicit format: Format) extends StringCommand {
@@ -140,7 +140,7 @@ object StringCommands {
     val ret  = (_: RedisReply[_]).asLong
   }
   
-  case class BitCount(key: Any, range: Option[(Int, Int)])(implicit format: Format) extends StringCommand {
+  case class BitCount(key: Any, range: Option[(Int, Int)] = None)(implicit format: Format) extends StringCommand {
     type Ret = Long
     val line = multiBulk("BITCOUNT" +: (List(key) ++ (range.map(_.productIterator.toList).getOrElse(List()))) map format.apply)
     val ret  = (_: RedisReply[_]).asLong

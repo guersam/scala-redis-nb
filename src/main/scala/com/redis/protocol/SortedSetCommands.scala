@@ -23,7 +23,7 @@ object SortedSetCommands {
   case class ZIncrby(key: Any, incr: Double, member: Any)(implicit format: Format) extends SortedSetCommand {
     type Ret = Option[Double]
     val line = multiBulk("ZINCRBY" +: (Seq(key, incr, member) map format.apply))
-    val ret  = (_: RedisReply[_]).asBulk(Parse.Implicits.parseDouble)
+    val ret  = (_: RedisReply[_]).asBulk map Parse.Implicits.parseDouble
   }
   
   case class ZCard(key: Any)(implicit format: Format) extends SortedSetCommand {
@@ -35,38 +35,40 @@ object SortedSetCommands {
   case class ZScore(key: Any, element: Any)(implicit format: Format) extends SortedSetCommand {
     type Ret = Option[Double]
     val line = multiBulk("ZSCORE" +: (Seq(key, element) map format.apply))
-    val ret  = (_: RedisReply[_]).asBulk(Parse.Implicits.parseDouble)
+    val ret  = (_: RedisReply[_]).asBulk map Parse.Implicits.parseDouble
   }
 
-  case class ZRange[A](key: Any, start: Int = 0, end: Int = -1, sortAs: SortOrder = ASC)(implicit format: Format, parse: Parse[A]) 
+  case class ZRange(key: Any, start: Int = 0, end: Int = -1, sortAs: SortOrder = ASC)(implicit format: Format)
     extends SortedSetCommand {
 
-    type Ret = List[A]
+    type Ret = List[String]
     val line = multiBulk(
       (if (sortAs == ASC) "ZRANGE" else "ZREVRANGE") +: (Seq(key, start, end) map format.apply))
     val ret  = (_: RedisReply[_]).asList.flatten // TODO remove intermediate Option
   }
 
-  case class ZRangeWithScore[A](key: Any, start: Int = 0, end: Int = -1, sortAs: SortOrder = ASC)(implicit format: Format, parse: Parse[A])
+  case class ZRangeWithScore(key: Any, start: Int = 0, end: Int = -1, sortAs: SortOrder = ASC)(implicit format: Format)
     extends SortedSetCommand {
 
-    type Ret = List[(A, Double)]
+    type Ret = List[(String, Double)]
     val line = multiBulk(
       (if (sortAs == ASC) "ZRANGE" else "ZREVRANGE") +:
       (Seq(key, start, end, "WITHSCORES") map format.apply)
     )
-    val ret  = (_: RedisReply[_]).asListPairs(parse, Parse.Implicits.parseDouble).flatten
+    val ret  = (_: RedisReply[_]).asListPairs.map {
+      case Some((k, v)) => (k, Parse.Implicits.parseDouble(v))
+    }
   }
 
-  case class ZRangeByScore[A](key: Any,
+  case class ZRangeByScore(key: Any,
     min: Double = Double.NegativeInfinity,
     minInclusive: Boolean = true,
     max: Double = Double.PositiveInfinity,
     maxInclusive: Boolean = true,
     limit: Option[(Int, Int)],
-    sortAs: SortOrder = ASC)(implicit format: Format, parse: Parse[A]) extends SortedSetCommand {
+    sortAs: SortOrder = ASC)(implicit format: Format) extends SortedSetCommand {
 
-    type Ret = List[A]
+    type Ret = List[String]
     val (limitEntries, minParam, maxParam) = 
       zrangebyScoreWithScoreInternal(min, minInclusive, max, maxInclusive, limit)
 
@@ -77,22 +79,22 @@ object SortedSetCommands {
     val ret  = (_: RedisReply[_]).asList.flatten // TODO remove intermediate Option
   }
 
-  case class ZRangeByScoreWithScore[A](key: Any,
+  case class ZRangeByScoreWithScore(key: Any,
           min: Double = Double.NegativeInfinity,
           minInclusive: Boolean = true,
           max: Double = Double.PositiveInfinity,
           maxInclusive: Boolean = true,
           limit: Option[(Int, Int)],
-          sortAs: SortOrder = ASC)(implicit format: Format, parse: Parse[A]) extends SortedSetCommand {
+          sortAs: SortOrder = ASC)(implicit format: Format) extends SortedSetCommand {
 
-    type Ret = List[(A, Double)]
+    type Ret = List[(String, Double)]
     val (limitEntries, minParam, maxParam) = 
       zrangebyScoreWithScoreInternal(min, minInclusive, max, maxInclusive, limit)
 
     val line = multiBulk(
       if (sortAs == ASC) "ZRANGEBYSCORE" +: ((Seq(key, minParam, maxParam, "WITHSCORES") ++ limitEntries) map format.apply)
       else "ZREVRANGEBYSCORE" +: ((Seq(key, maxParam, minParam, "WITHSCORES") ++ limitEntries) map format.apply))
-    val ret  = (_: RedisReply[_]).asListPairs(parse, Parse.Implicits.parseDouble).flatten
+    val ret  = (_: RedisReply[_]).asListPairs.collect { case Some((k, v)) => (k, Parse.Implicits.parseDouble(v)) }
   }
 
   private def zrangebyScoreWithScoreInternal[A](
@@ -101,7 +103,7 @@ object SortedSetCommands {
           max: Double = Double.PositiveInfinity,
           maxInclusive: Boolean = true,
           limit: Option[(Int, Int)])
-          (implicit format: Format, parse: Parse[A]): (List[Any], String, String) = {
+          (implicit format: Format): (List[Any], String, String) = {
 
     val limitEntries = 
       if(!limit.isEmpty) { 

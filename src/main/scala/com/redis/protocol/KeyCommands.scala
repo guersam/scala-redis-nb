@@ -5,16 +5,16 @@ import RedisCommand._
 
 
 object KeyCommands {
-  case class Keys[A](pattern: Any = "*")(implicit format: Format, parse: Parse[A]) extends KeyCommand {
-    type Ret = List[A]
+  case class Keys(pattern: Any = "*")(implicit format: Format) extends KeyCommand {
+    type Ret = List[String]
     val line = multiBulk("KEYS" +: Seq(format.apply(pattern)))
     val ret  = (_: RedisReply[_]).asList.flatten // TODO remove intermediate Option
   }
 
-  case class RandomKey[A](implicit parse: Parse[A]) extends KeyCommand {
-    type Ret = Option[A]
+  case object RandomKey extends KeyCommand {
+    type Ret = Option[String]
     val line = multiBulk(Seq("RANDOMKEY"))
-    val ret  = (_: RedisReply[_]).asBulk[A]
+    val ret  = (_: RedisReply[_]).asBulk
   }
 
   case class Rename(oldKey: Any, newKey: Any, nx: Boolean = false)(implicit format: Format) extends KeyCommand {

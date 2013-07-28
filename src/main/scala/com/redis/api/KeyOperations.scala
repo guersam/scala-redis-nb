@@ -1,7 +1,7 @@
 package com.redis
 package api
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import serialization._
 import akka.pattern.ask
@@ -16,23 +16,26 @@ trait KeyOperations { this: RedisOps =>
 
   // KEYS
   // returns all the keys matching the glob-style pattern.
-  def keys[A](pattern: Any = "*")(implicit timeout: Timeout, format: Format, parse: Parse[A]) =
-    clientRef.ask(Keys(pattern)).mapTo[List[A]]
+  def keys[A](pattern: Any = "*")
+             (implicit ec: ExecutionContext, timeout: Timeout, format: Format, parse: Parse[A]) = {
+    println(parse)
+    clientRef.ask(Keys(pattern)).mapTo[Keys#Ret] map {x => println(parse, x); x map parse}
+  }
 
   // RANDOMKEY
   // return a randomly selected key from the currently selected DB.
-  def randomkey[A](implicit timeout: Timeout, parse: Parse[A]) =
-    clientRef.ask(RandomKey[A]).mapTo[Option[A]]
+  def randomkey[A](implicit ec: ExecutionContext, timeout: Timeout, parse: Parse[A]) =
+    clientRef.ask(RandomKey).mapTo[RandomKey.Ret] map (_ map parse)
 
   // RENAME (oldkey, newkey)
   // atomically renames the key oldkey to newkey.
   def rename(oldkey: Any, newkey: Any)(implicit timeout: Timeout, format: Format) =
-    clientRef.ask(Rename(oldkey, newkey)).mapTo[Boolean]
+    clientRef.ask(Rename(oldkey, newkey)).mapTo[Rename#Ret]
 
   // RENAMENX (oldkey, newkey)
   // rename oldkey into newkey but fails if the destination key newkey already exists.
   def renamenx(oldkey: Any, newkey: Any)(implicit timeout: Timeout, format: Format) =
-    clientRef.ask(Rename(oldkey, newkey, nx = true)).mapTo[Boolean]
+    clientRef.ask(Rename(oldkey, newkey, nx = true)).mapTo[Rename#Ret]
 
   // DBSIZE
   // return the size of the db.

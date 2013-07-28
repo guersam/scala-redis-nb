@@ -25,15 +25,15 @@ sealed trait RedisReply[T] { self =>
 
   def asString: String = ???
 
-  def asBulk[A: Parse]: Option[A] = ???
+  def asBulk: Option[String] = ???
 
   def asBoolean: Boolean = ???
 
-  def asList[A: Parse]: List[Option[A]] = ???
+  def asList: List[Option[String]] = ???
 
-  def asListPairs[A: Parse, B: Parse]: List[Option[(A,B)]] = ???
+  def asListPairs: List[Option[(String, String)]] = ???
 
-  def asSet[A: Parse]: Set[A] = ???
+  def asSet: Set[String] = ???
 }
 
 case class IntegerReply(value: Long) extends RedisReply[Long] {
@@ -48,11 +48,7 @@ case class StatusReply(value: String) extends RedisReply[String] {
 
 case class BulkReply(value: Option[String]) extends RedisReply[Option[String]] {
   final override def asBoolean: Boolean = value.isDefined
-  final override def asBulk[A: Parse]: Option[A] = {
-    val parse = implicitly[Parse[A]]
-    if (parse == null) log.warn("Implicit parse for {} in asBulk[T: Parse] is null: {}", value)
-    value map parse
-  }
+  final override def asBulk = value
   final override def asString = value.get
 }
 
@@ -63,22 +59,16 @@ case class ErrorReply(value: RedisError) extends RedisReply[RedisError] {
 
 case class MultiBulkReply(value: List[BulkReply]) extends RedisReply[List[BulkReply]] {
 
-  final override def asList[A: Parse]: List[Option[A]] = {
-    val parse = implicitly[Parse[A]]
-    if (parse == null) log.warn("Implicit parse for {} in asList[T: Parse] is null", value)
-    value.map { _.value map parse }
+  final override def asList: List[Option[String]] = {
+    value.map(_.value)
   }
 
-  final override def asListPairs[A: Parse, B: Parse]: List[Option[(A,B)]] = {
-    val parseA = implicitly[Parse[A]]
-    val parseB = implicitly[Parse[B]]
-
-    asList[String].grouped(2).flatMap {
-      case List(Some(a), Some(b)) => Iterator.single(Some((parseA(a), parseB(b))))
+  final override def asListPairs: List[Option[(String, String)]] =
+    asList.grouped(2).flatMap {
+      case List(Some(a), Some(b)) => Iterator.single(Some((a, b)))
       case _ => Iterator.single(None)
     }.toList
-  }
 
-  final override def asSet[A: Parse]: Set[A] = asList[A].flatten.toSet
+  final override def asSet: Set[String] = asList.flatten.toSet
 
 }

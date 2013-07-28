@@ -16,10 +16,10 @@ object SetCommands {
     val ret  = (_: RedisReply[_]).asLong
   }
 
-  case class SPop[A](key: Any)(implicit format: Format, parse: Parse[A]) extends SetCommand {
-    type Ret = Option[A]
+  case class SPop(key: Any)(implicit format: Format) extends SetCommand {
+    type Ret = Option[String]
     val line = multiBulk("SPOP" +: (Seq(key) map format.apply))
-    val ret  = (_: RedisReply[_]).asBulk[A]
+    val ret  = (_: RedisReply[_]).asBulk
   }
   
   case class SMove(srcKey: Any, destKey: Any, value: Any)(implicit format: Format) extends SetCommand {
@@ -45,11 +45,11 @@ object SetCommands {
   case object inter extends setOp
   case object diff extends setOp
 
-  case class ∩∪∖[A](ux: setOp, key: Any, keys: Any*)(implicit format: Format, parse: Parse[A]) extends SetCommand {
-    type Ret = Set[A]
+  case class ∩∪∖(ux: setOp, key: Any, keys: Any*)(implicit format: Format) extends SetCommand {
+    type Ret = Set[String]
     val line = multiBulk(
       (if (ux == inter) "SINTER" else if (ux == union) "SUNION" else "SDIFF") +: (key :: keys.toList) map format.apply)
-    val ret  = (_: RedisReply[_]).asSet[A]
+    val ret  = (_: RedisReply[_]).asSet
   }
   
   case class SUXDStore(ux: setOp, destKey: Any, key: Any, keys: Any*)(implicit format: Format) extends SetCommand {
@@ -59,21 +59,21 @@ object SetCommands {
     val ret  = (_: RedisReply[_]).asLong
   }
 
-  case class SMembers[A](key: Any)(implicit format: Format, parse: Parse[A]) extends SetCommand {
-    type Ret = Set[A]
+  case class SMembers(key: Any)(implicit format: Format) extends SetCommand {
+    type Ret = Set[String]
     val line = multiBulk("SDIFF" +: Seq(key) map format.apply)
-    val ret  = (_: RedisReply[_]).asSet[A]
+    val ret  = (_: RedisReply[_]).asSet
   }
 
-  case class SRandMember[A](key: Any)(implicit format: Format, parse: Parse[A]) extends SetCommand {
-    type Ret = Option[A]
+  case class SRandMember(key: Any)(implicit format: Format) extends SetCommand {
+    type Ret = Option[String]
     val line = multiBulk("SRANDMEMBER" +: (Seq(key) map format.apply))
-    val ret  = (_: RedisReply[_]).asBulk[A]
+    val ret  = (_: RedisReply[_]).asBulk
   }
 
-  case class SRandMembers[A](key: Any, count: Int)(implicit format: Format, parse: Parse[A]) extends SetCommand {
-    type Ret = List[A]
+  case class SRandMembers(key: Any, count: Int)(implicit format: Format) extends SetCommand {
+    type Ret = List[String]
     val line = multiBulk("SRANDMEMBER" +: (Seq(key, count) map format.apply))
-    val ret  = (_: RedisReply[_]).asList[A].flatten // TODO remove intermediate Option
+    val ret  = (_: RedisReply[_]).asList.flatten // TODO remove intermediate Option
   }
 }

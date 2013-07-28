@@ -5,6 +5,7 @@ import serialization._
 import akka.pattern.ask
 import akka.util.Timeout
 import com.redis.protocol.StringCommands
+import scala.concurrent.ExecutionContext
 
 
 trait StringOperations { this: RedisOps =>
@@ -12,8 +13,8 @@ trait StringOperations { this: RedisOps =>
 
   // GET (key)
   // gets the value for the specified key.
-  def get[A](key: Any)(implicit timeout: Timeout, format: Format, parse: Parse[A]) =
-    clientRef.ask(Get[A](key)).mapTo[Option[A]]
+  def get[A](key: Any)(implicit ec: ExecutionContext, timeout: Timeout, format: Format, parse: Parse[A]) =
+    clientRef.ask(Get(key)).mapTo[Option[String]] map (_ map parse)
 
   // SET KEY (key, value)
   // sets the key with the specified value.
@@ -23,8 +24,9 @@ trait StringOperations { this: RedisOps =>
 
   // GETSET (key, value)
   // is an atomic set this value and return the old value command.
-  def getset[A](key: Any, value: Any)(implicit timeout: Timeout, format: Format, parse: Parse[A]) =
-    clientRef.ask(GetSet[A](key, value)).mapTo[Option[A]]
+  def getset[A](key: Any, value: Any)
+               (implicit ec: ExecutionContext, timeout: Timeout, format: Format, parse: Parse[A]) =
+    clientRef.ask(GetSet(key, value)).mapTo[Option[String]] map (_ map parse)
 
   // SETNX (key, value)
   // sets the value for the specified key, only if the key is not there.
@@ -64,8 +66,8 @@ trait StringOperations { this: RedisOps =>
   // MGET (key, key, key, ...)
   // get the values of all the specified keys.
   def mget[A](key: Any, keys: Any*)
-    (implicit timeout: Timeout, format: Format, parse: Parse[A]) =
-    clientRef.ask(MGet[A](key, keys:_*)).mapTo[List[Option[A]]]
+             (implicit ec: ExecutionContext, timeout: Timeout, format: Format, parse: Parse[A]) =
+    clientRef.ask(MGet(key, keys:_*)).mapTo[List[Option[String]]] map (_ map (_ map parse))
 
   // MSET (key1 value1 key2 value2 ..)
   // set the respective key value pairs. Overwrite value if key exists
@@ -86,8 +88,9 @@ trait StringOperations { this: RedisOps =>
   // GETRANGE key start end
   // Returns the substring of the string value stored at key, determined by the offsets
   // start and end (both are inclusive).
-  def getrange[A](key: Any, start: Int, end: Int)(implicit timeout: Timeout, format: Format, parse: Parse[A]) =
-    clientRef.ask(GetRange[A](key, start, end)).mapTo[Option[A]]
+  def getrange[A](key: Any, start: Int, end: Int)
+                 (implicit ec: ExecutionContext, timeout: Timeout, format: Format, parse: Parse[A]) =
+    clientRef.ask(GetRange(key, start, end)).mapTo[Option[String]] map (_ map parse)
 
   // STRLEN key
   // gets the length of the value associated with the key

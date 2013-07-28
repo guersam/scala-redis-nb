@@ -17,6 +17,6 @@ object Parse {
   implicit val parseDefault = Implicits.parseString
 }
 
-class Parse[A](val f: String => A) extends Function1[String, A] {
+class Parse[A](f: String => A) extends Function1[String, A] {
   def apply(in: String): A = f(in)
 }

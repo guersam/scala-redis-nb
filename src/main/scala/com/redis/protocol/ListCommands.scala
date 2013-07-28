@@ -16,7 +16,7 @@ object ListCommands {
     val line = multiBulk("LPUSHX" +: (Seq(key, value) map format.apply))
     val ret  = (_: RedisReply[_]).asLong
   }
-  
+
   case class RPush(key: Any, value: Any, values: Any*)(implicit format: Format) extends ListCommand {
     type Ret = Long
     val line = multiBulk("RPUSH" +: (key :: value :: values.toList) map format.apply)
@@ -28,11 +28,11 @@ object ListCommands {
     val line = multiBulk("RPUSHX" +: (Seq(key, value) map format.apply))
     val ret  = (_: RedisReply[_]).asLong
   }
-  
-  case class LRange[A](key: Any, start: Int, stop: Int)(implicit format: Format, parse: Parse[A]) extends ListCommand {
-    type Ret = List[A]
+
+  case class LRange(key: Any, start: Int, stop: Int)(implicit format: Format) extends ListCommand {
+    type Ret = List[String]
     val line = multiBulk("LRANGE" +: (Seq(key, start, stop) map format.apply))
-    val ret  = (_: RedisReply[_]).asList[A].flatten // TODO Remove intermediate Option[A]
+    val ret  = (_: RedisReply[_]).asList.flatten // TODO Remove intermediate Option[A]
   }
 
   case class LLen(key: Any)(implicit format: Format) extends ListCommand {
@@ -46,11 +46,11 @@ object ListCommands {
     val line = multiBulk("LTRIM" +: (Seq(key, start, end) map format.apply))
     val ret  = (_: RedisReply[_]).asBoolean
   }
-  
-  case class LIndex[A](key: Any, index: Int)(implicit format: Format, parse: Parse[A]) extends ListCommand {
-    type Ret = Option[A]
+
+  case class LIndex(key: Any, index: Int)(implicit format: Format) extends ListCommand {
+    type Ret = Option[String]
     val line = multiBulk("LINDEX" +: (Seq(key, index) map format.apply))
-    val ret  = (_: RedisReply[_]).asBulk[A]
+    val ret  = (_: RedisReply[_]).asBulk
   }
 
   case class LSet(key: Any, index: Int, value: Any)(implicit format: Format) extends ListCommand {
@@ -64,42 +64,41 @@ object ListCommands {
     val line = multiBulk("LREM" +: (Seq(key, count, value) map format.apply))
     val ret  = (_: RedisReply[_]).asLong
   }
-  
-  case class LPop[A](key: Any)(implicit format: Format, parse: Parse[A]) extends ListCommand {
-    type Ret = Option[A]
+
+  case class LPop(key: Any)(implicit format: Format) extends ListCommand {
+    type Ret = Option[String]
     val line = multiBulk("LPOP" +: (Seq(key) map format.apply))
-    val ret  = (_: RedisReply[_]).asBulk[A]
+    val ret  = (_: RedisReply[_]).asBulk
   }
-  
-  case class RPop[A](key: Any)(implicit format: Format, parse: Parse[A]) extends ListCommand {
-    type Ret = Option[A]
+
+  case class RPop(key: Any)(implicit format: Format) extends ListCommand {
+    type Ret = Option[String]
     val line = multiBulk("RPOP" +: (Seq(key) map format.apply))
-    val ret  = (_: RedisReply[_]).asBulk[A]
+    val ret  = (_: RedisReply[_]).asBulk
   }
-  
-  case class RPopLPush[A](srcKey: Any, dstKey: Any)(implicit format: Format, parse: Parse[A]) extends ListCommand {
-    type Ret = Option[A]
+
+  case class RPopLPush(srcKey: Any, dstKey: Any)(implicit format: Format) extends ListCommand {
+    type Ret = Option[String]
     val line = multiBulk("RPOPLPUSH" +: (Seq(srcKey, dstKey) map format.apply))
-    val ret  = (_: RedisReply[_]).asBulk[A]
+    val ret  = (_: RedisReply[_]).asBulk
   }
-  
-  case class BRPopLPush[A](srcKey: Any, dstKey: Any, timeoutInSeconds: Int)(implicit format: Format, parse: Parse[A]) extends ListCommand {
-    type Ret = Option[A]
+
+  case class BRPopLPush(srcKey: Any, dstKey: Any, timeoutInSeconds: Int)(implicit format: Format) extends ListCommand {
+    type Ret = Option[String]
     val line = multiBulk("BRPOPLPUSH" +: (Seq(srcKey, dstKey, timeoutInSeconds) map format.apply))
-    val ret  = (_: RedisReply[_]).asBulk[A]
+    val ret  = (_: RedisReply[_]).asBulk
   }
-  
-  case class BLPop[K, V](timeoutInSeconds: Int, key: K, keys: K*)
-    (implicit format: Format, parseK: Parse[K], parseV: Parse[V]) extends ListCommand {
-    type Ret = Option[(K, V)]
+
+  case class BLPop(timeoutInSeconds: Int, key: Any, keys: Any*)(implicit format: Format) extends ListCommand {
+    type Ret = Option[(String, String)]
     val line = multiBulk("BLPOP" +: ((key :: keys.foldRight(List[Any](timeoutInSeconds))(_ :: _)) map format.apply))
-    val ret  = (_: RedisReply[_]).asListPairs[K,V].flatten.headOption
+    val ret  = (_: RedisReply[_]).asListPairs.flatten.headOption
   }
-  
-  case class BRPop[K, V](timeoutInSeconds: Int, key: K, keys: K*)
-    (implicit format: Format, parseK: Parse[K], parseV: Parse[V]) extends ListCommand {
-    type Ret = Option[(K, V)]
+
+  case class BRPop(timeoutInSeconds: Int, key: Any, keys: Any*)
+    (implicit format: Format) extends ListCommand {
+    type Ret = Option[(String, String)]
     val line = multiBulk("BRPOP" +: ((key :: keys.foldRight(List[Any](timeoutInSeconds))(_ :: _)) map format.apply))
-    val ret  = (_: RedisReply[_]).asListPairs[K,V].flatten.headOption
+    val ret  = (_: RedisReply[_]).asListPairs.flatten.headOption
   }
 }
