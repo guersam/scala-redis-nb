@@ -15,6 +15,7 @@ class KeyOperationsSpec extends RedisSpecBase {
       val prepare = Seq(client.set("anshin-1", "debasish"), client.set("anshin-2", "maulindu"))
       val prepareRes = Future.sequence(prepare).futureValue
 
+      log.warn("Implicit Parse[A]: {}", implicitly[com.redis.serialization.Parse[String]])
       val res = client.keys("anshin*")
       res.futureValue should have length (2)
     }

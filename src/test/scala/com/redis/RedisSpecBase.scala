@@ -8,6 +8,7 @@ import akka.actor._
 import org.scalatest._
 import org.scalatest.concurrent.{Futures, ScalaFutures}
 import org.scalatest.time._
+import org.slf4j.LoggerFactory
 
 
 trait RedisSpecBase extends FunSpec
@@ -17,6 +18,8 @@ trait RedisSpecBase extends FunSpec
                  with BeforeAndAfterEach
                  with BeforeAndAfterAll {
   import RedisSpecBase._
+
+  def log = LoggerFactory.getLogger(this.getClass)
 
   // Akka setup
   implicit val system = ActorSystem("redis-test-"+ iter.next)

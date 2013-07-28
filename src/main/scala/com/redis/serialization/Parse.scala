@@ -19,4 +19,6 @@ object Parse {
 
 class Parse[A](f: String => A) extends Function1[String, A] {
   def apply(in: String): A = f(in)
+
+  override def toString = "I'm Parse[A]!"
 }

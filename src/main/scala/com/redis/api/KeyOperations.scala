@@ -17,10 +17,8 @@ trait KeyOperations { this: RedisOps =>
   // KEYS
   // returns all the keys matching the glob-style pattern.
   def keys[A](pattern: Any = "*")
-             (implicit ec: ExecutionContext, timeout: Timeout, format: Format, parse: Parse[A]) = {
-    println(parse)
-    clientRef.ask(Keys(pattern)).mapTo[Keys#Ret] map {x => println(parse, x); x map parse}
-  }
+             (implicit ec: ExecutionContext, timeout: Timeout, format: Format, parse: Parse[A]) =
+    clientRef.ask(Keys(pattern)).mapTo[Keys#Ret] map (_ map parse)
 
   // RANDOMKEY
   // return a randomly selected key from the currently selected DB.
